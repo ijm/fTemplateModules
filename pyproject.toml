@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ftemplatemodules"
+version = "0.1.0"
+authors = [
+  { name="Ian McEwan", email="ijm567@gmail.com" },
+]
+description = "Use import hooks to read in a template file as if it were a python module object."
+readme = "README.md"
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+Homepage = "https://github.com/ijm/mTemplateModules"
+Issues = "https://github.com/ijm/mTemplateModules/issues"

@@ -1,0 +1,3 @@
+[jsonInstructions() -> str]
+Output as well formed JSON, where the JSON is complete, should avoid using dictionaries, and has a line length of 70 charactors.
+

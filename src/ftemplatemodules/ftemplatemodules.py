@@ -14,12 +14,7 @@ class statements():
     sig = 2
 
 
-def parse(path):
-    """
-    Split up the template file into block of the form
-      [python signature]
-      Free form text.
-    """
+def getFTmplGrammar():
     def wrapBlk(elem):
         """
         Rejoin lines together, recording the lineno of the start.
@@ -59,8 +54,21 @@ def parse(path):
     def g(s: str, lk: int, t: pp.ParseResults):
         return [(t[0], t[1])]
 
+    return all
+
+
+fTmplGrammar = getFTmplGrammar()
+
+
+def parse(path):
+    """
+    Split up the template file into block of the form
+      [python signature]
+      Free form text.
+    """
+
     with path.open("rt") as fd:
-        parseTree = all.parseFile(fd)
+        parseTree = fTmplGrammar.parseFile(fd)
 
     return parseTree
 

@@ -6,29 +6,61 @@ This is a lightweight module that adds import hooks and parsing
 logic to allow a template file containing various named f-strings
 to be imported directly. Most of the hard work is done by the
 Python compiler, so most syntax and error checking is exactly as 
-it would be in an ordinary python file.
+it would be in an ordinary Python file.
 
-The .ftmpl files have a simple structure, they are repeated blocks
-of the form :
+## Why?
+I like f-strings. A lot. However, when the strings get larger, some issues
+start to arise:
+1.  Long LLM prompts, and LaTeX templates are mostly human language things,
+    not Python. I would like my IDE to do human language things, like
+    spelling or grammar checking, for human text, and python code suggestions
+    for the Python. Not the other way around.
+2.  f-strings are awesome, but sometimes, especially with LaTeX, the braces `{}`
+    really need to be a different character. LaTeX uses braces a lot and
+    constantly escaping them is annoying.
+3.  Comments that may only be relevant to the template have to be moved out
+    of the string or are passed on to the output to be ignored there.
+4.  Whitespace has to be pre-normalized in the string or the string has to
+    be passed to a runtime function that understands not to touch f-strings 
+    while normalizing.
 
-```
-[python-function(signature)]
-Free form text in f-string syntax
-```
+So fTemplateModules parses a `.ftmpl` file to address these things while
+cheating by passing most of the hard work back to the Python compiler, and
+presenting the result as a Python module from the outside.
+
+## Grammar
+The `.ftmpl` files have a fairly simple structure: Everything is free-form
+text except for a few statements which are always a complete line starting and
+ending in square braces: `[some statement or command]`, which we'll call
+square-lines.
+
+The file starts with one or more import square lines 
+( `[import other_module]` ) followed by one or more blocks of the form :
+`[function-signature ; optional-options]` followed by an optional
+square-line for a description, which is followed by the associated
+free-form text.
+
+As with any mixed-language parser there are some edge cases. Square
+braces `[]` were picked because they're not often used in human text and
+don't clash with f-srings `{}`. The ';' was picked as an option seperator
+because Python rarely uses it, and it means line-break anyway. Lastly
+`]` at the end of a line ends a doc-string so don't do that if you
+don't want it to end.
 Each block is rearranged into the code :
 ```python
 def function(signature):
+    """Description text"""
     return f"""Free form text in f-string syntax"""
 ```
 and made available for import in the normal way.
 You can also import other modules using an `[import line]` at the
 beginning of the file. This can be any valid module, so this example
-shows both an ordinary Python import and another .ftmpl file:
+shows both an ordinary Python import and another `.ftmpl` file:
 
 ## Example
 (ToDo: better examples!)
 
-The following python :
+The following Python :
 ```python
 import ftemplatemodules
 from prompts import test_prompt
@@ -72,13 +104,14 @@ Output as well formed JSON, where the JSON is complete, should avoid using dicti
 
 # ToDo
 1. Better examples.
-2. The constructed functions are parsed literally with `python
+2. Some proper tests.
+3. The constructed functions are parsed literally with `python
 ast.parse(f'def {strSig}:\n return f"""{strTmp}"""') `.
 This causes the column numbering to be off in error messages. I
 need to split it into several `parse()` calls to control the line and
 column numbering better.
-3. I could add a translation step before parsing to do two things:
-remove comments of a specified type if the user wants them, and to
-change the template variable designated characters from '{}', which
-would be most useful for LaTeX templates.
+4. Need to add a transform step that can handing doing things like
+normalizing whitespace, removing comments, or chaning the template
+format charater from {} to something else, which would be most useful
+for LaTeX templates.
 

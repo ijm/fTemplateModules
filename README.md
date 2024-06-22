@@ -36,16 +36,18 @@ square-lines.
 
 The file starts with one or more import square lines 
 ( `[import other_module]` ) followed by one or more blocks of the form :
-`[function-signature ; optional-options]` followed by an optional
-square-line for a description, which is followed by the associated
-free-form text.
+`[function-signature ; optional-comma-seperated-options]` followed by 
+an optional square-line for a doc-string description, which is followed
+by the associated free-form text. The doc-string square-line uses an
+additional quote: `["A defreeform text description"]` (see example below).
 
 As with any mixed-language parser there are some edge cases. Square
 braces `[]` were picked because they're not often used in human text and
 don't clash with f-srings `{}`. The ';' was picked as an option seperator
 because Python rarely uses it, and it means line-break anyway. Lastly
-`]` at the end of a line ends a doc-string so don't do that if you
+`"]` at the end of a line ends a doc-string so don't do that if you
 don't want it to end.
+
 Each block is rearranged into the code :
 ```python
 def function(signature):
@@ -76,6 +78,7 @@ uses `prompts.ftmpl` :
 [from json import dumps]
 
 [test_prompt(data, action) -> str]
+["Prompt template function for a friendly LLM"]
 You are a friendly LLM.
 
 {action}

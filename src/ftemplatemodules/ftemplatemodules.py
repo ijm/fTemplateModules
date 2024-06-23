@@ -7,9 +7,6 @@ from importlib.util import spec_from_loader
 from typing import Callable
 
 
-modulesuffix = ".ftmpl"
-
-
 # Transforms section
 #
 # Define optional transforms, and assemble them into a dictionary.
@@ -214,6 +211,8 @@ def assemble(cst: list[(int, str, str)]):
 
 # Import and module machinery section.
 class fTemplateLoader(SourcelessFileLoader):
+    SUFFIX = ".ftmpl"
+
     def __init__(self, name, path):
         super().__init__(name, path)
 
@@ -223,7 +222,7 @@ class fTemplateLoader(SourcelessFileLoader):
     def get_code(self, name):
         """Load and compile the module code"""
 
-        path = Path(name).with_suffix(modulesuffix)
+        path = Path(name).with_suffix(self.SUFFIX)
         cst = parse(path)
         mod = assemble(cst)
         obj = compile(mod, path.resolve(), 'exec')
@@ -234,8 +233,9 @@ class fTemplateFinder(object):
     def find_spec(self, name: str, path: str, target) -> ModuleSpec:
         """Look for a toplevel file with ending in `modulesuffix` (.ftmpl)"""
 
-        if Path(name).with_suffix(modulesuffix).is_file():
-            return spec_from_loader(name, fTemplateLoader(name, path))
+        loader = fTemplateLoader(name, path)
+        if Path(name).with_suffix(loader.SUFFIX).is_file():
+            return spec_from_loader(name, loader)
         return None
 
 

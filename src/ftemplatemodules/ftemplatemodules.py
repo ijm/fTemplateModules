@@ -10,6 +10,8 @@ from typing import Callable
 modulesuffix = ".ftmpl"
 
 
+# Transforms section
+#
 # Define optional transforms, and assemble them into a dictionary.
 # This is implemented as seperate decorated functions rather than a
 # dictionary of lambdas.
@@ -84,6 +86,7 @@ def _(tmpl: str, docs: str) -> (str, str):
     return (transform.transformString(tmpl), docs)
 
 
+# Parser section.
 class Statements:
     IMPORT = 1
     SIG = 2
@@ -91,6 +94,7 @@ class Statements:
 
 def get_ftmplgrammar():
     def wrapTag(elem, tag: int):
+        """Flatten and tag a command element with a line number"""
         def h(s: str, lk: int, t: pp.ParseResults):
             return [(tag, pp.lineno(lk, s), " ".join(t))]
         return elem.set_parse_action(h)
@@ -142,6 +146,7 @@ def get_ftmplgrammar():
 
     @block.set_parse_action
     def _(s: str, lk: int, t: pp.ParseResults):
+        """Flatten tree into a command typle"""
         match t:
             case [[sig, opts], tmpl]:
                 return [(sig, tmpl, (0, ''), opts)]
@@ -165,6 +170,7 @@ def parse(path):
     return parseTree
 
 
+# Code building section
 def mk_function(statement: (int, int, str),
                 tmpl: (int, str),
                 doc: (int, str),
@@ -197,6 +203,7 @@ def mk_function(statement: (int, int, str),
 
 
 def assemble(cst: list[(int, str, str)]):
+    """Transform and build tree ready for compiling"""
     funcs = [mk_function(*args) for args in cst]
 
     mod = ast.Module(body=funcs, type_ignores=[])
@@ -205,6 +212,7 @@ def assemble(cst: list[(int, str, str)]):
     return mod
 
 
+# Import and module machinery section.
 class fTemplateLoader(SourcelessFileLoader):
     def __init__(self, name, path):
         super().__init__(name, path)
@@ -234,6 +242,7 @@ class fTemplateFinder(object):
 sys.meta_path.append(fTemplateFinder())
 
 
+# Test section
 def tests():
     """
     I should put some tests here.

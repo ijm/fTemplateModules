@@ -4,25 +4,96 @@ import pyparsing as pp
 from pathlib import Path
 from importlib.machinery import ModuleSpec, SourcelessFileLoader
 from importlib.util import spec_from_loader
+from typing import Callable
 
 
 modulesuffix = ".ftmpl"
-boolParseOptions = ["cstylecomments", "unwraplines", "appendtodoc"]
+
+
+# Define optional transforms, and assemble them into a dictionary.
+# This is implemented as seperate decorated functions rather than a
+# dictionary of lambdas.
+# The decorator takes the name of the option as seen in the template as
+# it's only argument and adds the assosiated function under that name.
+# transforms are always of the form (str, str)->(str, str) where the first
+# string is the template string, and the second string is the doc-string
+
+transformMap = {}
+
+
+def add_transform(key: str):
+    """Curried decorator function to add a template to the options dictionary"""
+    def f(func: Callable[[str, str], [str, str]]):
+        transformMap[key] = func
+    return f
+
+
+@add_transform("remove_cpp_comments")
+def _(tmpl: str, docs: str) -> (str, str):
+    """Use PyParsing's cpp_style_comment() to remove c++ style comments"""
+    return (pp.cpp_style_comment().suppress().transformString(tmpl), docs)
+
+
+@add_transform("remove_python_comments")
+def _(tmpl: str, docs: str) -> (str, str):
+    """Use PyParsing's python_style_comment() to remove python style comments"""
+    return (pp.python_style_comment().suppress().transformString(tmpl), docs)
+
+
+@add_transform("remove_html_comments")
+def _(tmpl: str, docs: str) -> (str, str):
+    """Use PyParsing's html_comment() to remove html style comments"""
+    return (pp.html_comment().suppress().transformString(tmpl), docs)
+
+
+@add_transform("append_doc")
+def _(tmpl: str, docs: str) -> (str, str):
+    """Append the current template string to the current doc string."""
+    return (tmpl, docs + tmpl)
+
+
+@add_transform("unwrap_lines")
+def _(tmpl: str, docs: str) -> (str, str):
+    """
+    Unwrap line-broken lines and normalize line white space.
+    This transform reduces the number of EOLs in a row and replaces
+    an EOL with a space if it is the only one.
+    """
+    @pp.OneOrMore(pp.lineEnd()).set_parse_action
+    def newlines(s: str, lk: int, t: pp.ParseResults):
+        return [" "] if len(t) == 1 else t[1:]
+
+    return (newlines.transformString(tmpl), docs)
+
+
+@add_transform("latex_tmpl")
+def _(tmpl: str, docs: str) -> (str, str):
+    """Transform for Latex Templates to escape {} to {{}} and map <> to {}"""
+
+    def replace(elem, target: str):
+        @elem.set_parse_action
+        def _(s: str, lk: int, t: pp.ParseResults):
+            return [target]
+        return elem
+
+    transform = replace(pp.Char("{"), "{{") |\
+        replace(pp.Char("}"), "}}") |\
+        replace(pp.Char("<"), "{") |\
+        replace(pp.Char(">"), "}")
+
+    return (transform.transformString(tmpl), docs)
 
 
 class Statements:
-    IMP = 1
+    IMPORT = 1
     SIG = 2
 
 
 def get_ftmplgrammar():
-    def wrapTag(elem, tag):
+    def wrapTag(elem, tag: int):
         def h(s: str, lk: int, t: pp.ParseResults):
             return [(tag, pp.lineno(lk, s), " ".join(t))]
         return elem.set_parse_action(h)
-
-    def raise_error(s, loc, toks):
-        raise pp.ParseFatalException(s, loc, "Unknown Option")
 
     eol = pp.LineEnd().suppress()
     sq_SOL = pp.AtLineStart(pp.Literal('[')).suppress()
@@ -30,20 +101,19 @@ def get_ftmplgrammar():
     ds_SOL = pp.AtLineStart(pp.Literal('["')).suppress()
     ds_EOL = pp.Literal('"]').suppress() + eol
     op_sep = pp.Literal(';').suppress()
-    empty_def = pp.Empty().set_parse_action(lambda x: [[]])
+    empty_def = pp.Empty().set_parse_action(lambda _: [[]])
 
     import_cmd = (pp.Keyword("import") | pp.Keyword("from")) + pp.SkipTo(sq_EOL)
 
     signature = pp.SkipTo(sq_EOL | op_sep)
 
     py_sig = wrapTag(signature, Statements.SIG)
-    import_line = sq_SOL + wrapTag(import_cmd, Statements.IMP) + sq_EOL
-    # options = pp.oneOf(pp.Literal(op) for op in boolOptions)
-    opts = pp.oneOf(boolParseOptions, as_keyword=True) |\
-        pp.SkipTo(pp.White() | sq_EOL).set_parse_action(raise_error)
+    import_line = sq_SOL + wrapTag(import_cmd, Statements.IMPORT) + sq_EOL
+
+    options = pp.Group(pp.DelimitedList(pp.common.identifier()))
 
     sig_op_line =\
-        (sq_SOL + py_sig + op_sep + pp.Group(pp.DelimitedList(opts)) + sq_EOL) |\
+        (sq_SOL + py_sig + op_sep + options + sq_EOL) |\
         (sq_SOL + py_sig + empty_def + sq_EOL)
 
     lines = pp.OneOrMore(pp.SkipTo(pp.LineEnd()) + eol, stopOn=sq_SOL)
@@ -102,16 +172,21 @@ def mk_function(statement: (int, int, str),
                 ):
     """Build AST for a block or statment. (Needs much work)"""
     id, lineSig, strSig = statement
-    lineTmpl, strTmp = tmpl
+    lineTmpl, strTmpl = tmpl
     lineDoc, strDoc = doc
 
-    if id == Statements.IMP:
+    if id == Statements.IMPORT:
         line = ast.parse(strSig).body[0]
     elif id == Statements.SIG:
+        for opt in options:
+            if opt not in transformMap:
+                raise KeyError(f"Unknown transform option {opt}")
+            (strTmpl, strDoc) = transformMap[opt](strTmpl, strDoc)
+
         if strDoc == '':
-            line = ast.parse(f'def {strSig}:\n return f"""{strTmp}"""').body[0]
+            line = ast.parse(f'def {strSig}:\n return rf"""{strTmpl}"""').body[0]
         else:
-            line = ast.parse(f'def {strSig}:\n """{strDoc}"""\n return f"""{strTmp}"""').body[0]
+            line = ast.parse(f'def {strSig}:\n """{strDoc}"""\n return rf"""{strTmpl}"""').body[0]
     else:
         raise ValueError(f"{id=}")  # should do better
 

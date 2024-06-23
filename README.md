@@ -24,9 +24,9 @@ start to arise:
     be passed to a runtime function that understands not to touch f-strings 
     while normalizing.
 
-So fTemplateModules parses a `.ftmpl` file to address these things while
-cheating by passing most of the hard work back to the Python compiler, and
-presenting the result as a Python module from the outside.
+So fTemplateModules parses and transforms a `.ftmpl` file to address these
+things while cheating by passing most of the hard work back to the Python
+compiler, and presenting the result as a Python module from the outside.
 
 ## Grammar
 The `.ftmpl` files have a fairly simple structure: Everything is free-form
@@ -34,12 +34,27 @@ text except for a few statements which are always a complete line starting and
 ending in square braces: `[some statement or command]`, which we'll call
 square-lines.
 
-The file starts with one or more import square lines 
-( `[import other_module]` ) followed by one or more blocks of the form :
+In it's simplist form the file is a series of blocks where the first line is
+a square-line declaring a function signature and is followed by a free-form
+text block that continues to the end of file or the next square-line:
+```text
+[my_llm_promptA(s: str) -> str]
+My LLM Promp with an f-string formating : {s}
+
+[my_llm_promptB(x: float)-> str]
+Some other prompt with a {x:.2f} number.
+```
+
+More completely: the file starts with one or more import square lines 
+( `[import other_module]` ), which are ordinary Python import lines wrapped
+in square brackets. They're followed by one or more blocks of the form :
 `[function-signature ; optional-comma-seperated-options]` followed by 
 an optional square-line for a doc-string description, which is followed
 by the associated free-form text. The doc-string square-line uses an
 additional quote: `["A defreeform text description"]` (see example below).
+If a `;` and comma seperated list of optional transforms is given, these
+transforms are applied to the (template-string, doc-string) pair for that
+block n the order given in the list.
 
 As with any mixed-language parser there are some edge cases. Square
 braces `[]` were picked because they're not often used in human text and
@@ -59,8 +74,11 @@ You can also import other modules using an `[import line]` at the
 beginning of the file. This can be any valid module, so this example
 shows both an ordinary Python import and another `.ftmpl` file:
 
+Once imported everything should work as expected for any python module,
+including the `help()` function and, with a little hacking `pydoc()`
+
 ## Example
-(ToDo: better examples!)
+(ToDo: better examples! A longer example is in the example directory)
 
 The following Python :
 ```python
@@ -113,8 +131,4 @@ ast.parse(f'def {strSig}:\n return f"""{strTmp}"""') `.
 This causes the column numbering to be off in error messages. I
 need to split it into several `parse()` calls to control the line and
 column numbering better.
-4. Need to add a transform step that can handing doing things like
-normalizing whitespace, removing comments, or chaning the template
-format charater from {} to something else, which would be most useful
-for LaTeX templates.
 

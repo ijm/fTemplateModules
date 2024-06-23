@@ -1,7 +1,6 @@
 [from basePrompts import *]
 [from json import dumps]
-
-[test_prompt(data, action) -> str]
+[test_prompt(data, action)->str]
 You are a friendly LLM. 
 
 {action}
@@ -9,4 +8,27 @@ You are a friendly LLM.
 The JSON is {dumps(data)}
 
 {jsonInstructions()}
+
+[test_prompt_tex(sub: int) -> str ; remove_cpp_comments, latex_tmpl]
+["A LaTeX test template"]
+A string with some math in it $x=<sub>$ $\vec{x}=\mathbf{<sub>}$
+and a c++ like comment removed /* comment */ thing
+// more c comemnts
+
+[testB() ; append_doc, unwrap_lines]
+Lorem ipsum dólór sit, ámet confidere corporé diésqué
+expetitur mala placatae vivendo. Afféctus delectari
+dixisset faciam fuérit, légérint libido nemini videre.
+Avocent concursio convincere dapibus, dicendum dolor éfficitur
+éxpédiunt, ita libenter meliore posse sermone verterunt. 
+
+Atómós contemnit disciplinis emancipaverat illustriorá, investigandi
+legemus modi molestiae nostram periculis placuit postea quosvis seque.
+Cóniuncta delectant disciplinam disseretur exedunt haec improborum latina
+patrius praesidium respondendum sola verissimum. Adiit confirmare existunt
+graecam intellegitur, perveniri placeat. Adhuc assidua augue falsi
+fortunam, iustitia morte platónis purus 
+
+
+simul. 
 

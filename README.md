@@ -52,13 +52,13 @@ in square brackets. They're followed by one or more blocks of the form :
 an optional square-line for a doc-string description, which is followed
 by the associated free-form text. The doc-string square-line uses an
 additional quote: `["A defreeform text description"]` (see example below).
-If a `;` and comma seperated list of optional transforms is given, these
+If a `;` and comma separated list of optional transforms is given, these
 transforms are applied to the (template-string, doc-string) pair for that
-block n the order given in the list.
+block in the order given in the list.
 
 As with any mixed-language parser there are some edge cases. Square
 braces `[]` were picked because they're not often used in human text and
-don't clash with f-srings `{}`. The ';' was picked as an option seperator
+don't clash with f-strings `{}`. The ';' was picked as an option seperator
 because Python rarely uses it, and it means line-break anyway. Lastly
 `"]` at the end of a line ends a doc-string so don't do that if you
 don't want it to end.
@@ -67,7 +67,7 @@ Each block is rearranged into the code :
 ```python
 def function(signature):
     """Description text"""
-    return f"""Free form text in f-string syntax"""
+    return rf"""Free form text in f-string syntax"""
 ```
 and made available for import in the normal way.
 You can also import other modules using an `[import line]` at the
@@ -121,7 +121,15 @@ The JSON is {"key1": "something-one", "key2": "something-two"}
 Output as well formed JSON, where the JSON is complete, should avoid using dictionaries, and has a line length of 70 characters.
 ```
 
-
+An example with a doc-string transforms to help templateing LaTeX 
+document code :
+```text
+[test_prompt_tex(sub: int) -> str ; remove_cpp_comments, latex_tmpl]
+["A LaTeX test template"]
+A string with some math in it $x=<sub>$ $\vec{x}=\mathbf{<sub>}$
+and a c++ like comment removed /* comment */ something something
+// Another c comemnts
+```
 
 # ToDo
 1. Better examples.

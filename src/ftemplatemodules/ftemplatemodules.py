@@ -3,7 +3,9 @@ import ast
 import pyparsing as pp
 from pathlib import Path
 from importlib.machinery import ModuleSpec, SourcelessFileLoader
-from importlib.util import spec_from_loader
+import importlib
+# from importlib.util import spec_from_loader
+# from importlib import module
 from typing import Callable
 
 
@@ -158,13 +160,9 @@ def get_ftmplgrammar():
 fTmplGrammar = get_ftmplgrammar()
 
 
-def parse(path):
+def parse_file(fd):
     """Entry point to parse a .ftmpl module file."""
-
-    with path.open("rt") as fd:
-        parseTree = fTmplGrammar.parseFile(fd, parseAll=True)
-
-    return parseTree
+    return fTmplGrammar.parse_file(fd, parseAll=True)
 
 
 # Code building section
@@ -209,6 +207,20 @@ def assemble(cst: list[(int, str, str)]):
     return mod
 
 
+# Utilities section
+def loadm(modname: str):
+    """Wrapper for importlibe.import_module()"""
+    return importlib.import_module(modname, package=None)
+
+
+def unparse(fd):
+    """
+    Returns the equivilant Python source code for tmplfile by unparseing
+    the generated AST without importing the module.
+    """
+    return ast.unparse(assemble(parse_file(fd)))
+
+
 # Import and module machinery section.
 class fTemplateLoader(SourcelessFileLoader):
     SUFFIX = ".ftmpl"
@@ -223,10 +235,11 @@ class fTemplateLoader(SourcelessFileLoader):
         """Load and compile the module code"""
 
         path = Path(name).with_suffix(self.SUFFIX)
-        cst = parse(path)
-        mod = assemble(cst)
-        obj = compile(mod, path.resolve(), 'exec')
-        return obj
+
+        with open(path, "rt") as fd:
+            cst = parse_file(fd)
+
+        return compile(assemble(cst), path.resolve(), 'exec')
 
 
 class fTemplateFinder(object):
@@ -235,7 +248,7 @@ class fTemplateFinder(object):
 
         loader = fTemplateLoader(name, path)
         if Path(name).with_suffix(loader.SUFFIX).is_file():
-            return spec_from_loader(name, loader)
+            return importlib.util.spec_from_loader(name, loader)
         return None
 
 

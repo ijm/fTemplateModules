@@ -3,6 +3,15 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# vim swap
+[._]*.s[a-v][a-z]
+!*.svg  # comment out if you don't need vector files
+[._]*.sw[a-p]
+[._]s[a-rt-v][a-z]
+[._]ss[a-gi-z]
+[._]sw[a-p]
+*~
+
 # C extensions
 *.so
 

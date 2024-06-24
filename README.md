@@ -54,7 +54,16 @@ by the associated free-form text. The doc-string square-line uses an
 additional quote: `["A free-form text description"]` (see example below).
 If a `;` and comma separated list of optional transforms is given, these
 transforms are applied to the (template-string, doc-string) pair for that
-block in the order given in the list.
+block in the order given in the list. 
+
+So for example :
+```text
+[test_prompt_tex(sub: int) -> str ; remove_cpp_comments, latex_tmpl]
+["A LaTeX test template"]
+A string with some math in it $x=<sub>$ $\vec{x}=\mathbf{<sub>}$
+and a c++ like comment removed /* comment */ something something
+// Another c comemnt
+```
 
 As with any mixed-language parser, there are some edge cases. Square
 braces `[]` were picked because they're not often used in human text and
@@ -63,24 +72,27 @@ because Python rarely uses it, and it means line-break anyway. Lastly,
 `"]` at the end of a line ends a doc-string, so don't do that if you
 don't want it to end.
 
-Each block is rearranged into the code :
+Each block is rearranged into a single function. The above example becomes:
 ```python
-def function(signature):
-    """Description text"""
-    return rf"""Free form text in f-string syntax"""
+def test_prompt_tex(sub: int) -> str:
+    """A LaTeX test template"""
+    return f'A string with some math in it $x={sub}$ $\\vec{{x}}=\\mathbf{{{sub}}}$\nand a c++ like comment removed  thing\n\n'
 ```
-and made available for import in the normal way.
-You can also import other modules using an `[import line]` at the
-beginning of the file. This can be any valid module, so this example
-shows both an ordinary Python import and another `.ftmpl` file:
+and is  made available for import in the normal way.
+
+You can import other modules using an `[import line]` at the
+beginning of the file. This can be any valid module, either another
+`.ftmpl` file or an ordinary Python module. One of the examples uses
+this to import the `json.dumps()` function.
 
 Once imported, everything should work as expected for any Python module,
-including the `help()` function and, with a little hacking, `pydoc()`.
+including the `help()` function and, with a little hacking, `pydoc()` (see
+the pydocftmpl.py example)
 
 ## Transforms
 Current built-in transforms are :
 
-| option | Description |
+| Option | Description |
 | :--:|:--- |
 | remove_cpp_comments    | Use PyParsing's `cpp_style_comment()` to remove c++ style comments.        |
 | remove_python_comments | Use PyParsing's `python_style_comment()` to remove python style comments.  |
@@ -89,12 +101,12 @@ Current built-in transforms are :
 | unwrap_lines           | Unwrap line-broken lines and normalize line white space. This transform  |
 |                        | reduces the number of EOLs in a row and replaces an EOL with a space if  |
 |                        | it is the only one. |
-| latex_tmpl             | Transform for Latex Templates to escape `{}` to `{{}}` and 
+| latex_tmpl             | Transform for LaTeX templates: escape `{}` to `{{}}` and 
 |                        | map `<>` to `{}` |
 
 ## Custom Transforms
-Each transform is a function with signature `(str, str) -> (str, str)`, and
-added to the options list with the `@add_transform(NAME)` decorator:
+Each transform is a function with signature `(str, str) -> (str, str)`, and is
+added to the possible options list with the `@add_transform(NAME)` decorator:
 
 ```python
 @add_transform("transform_name")
@@ -146,16 +158,6 @@ Say Hello!
 The JSON is {"key1": "something-one", "key2": "something-two"}
 
 Output as well formed JSON, where the JSON is complete, should avoid using dictionaries, and has a line length of 70 characters.
-```
-
-An example with a doc-string transforms to help templateing LaTeX 
-document code :
-```text
-[test_prompt_tex(sub: int) -> str ; remove_cpp_comments, latex_tmpl]
-["A LaTeX test template"]
-A string with some math in it $x=<sub>$ $\vec{x}=\mathbf{<sub>}$
-and a c++ like comment removed /* comment */ something something
-// Another c comemnts
 ```
 
 # ToDo

@@ -34,12 +34,12 @@ text except for a few statements which are always a complete line starting and
 ending in square braces: `[some statement or command]`, which we'll call
 square-lines.
 
-In it's simplist form the file is a series of blocks where the first line is
+In its simplest form, the file is a series of blocks where the first line is
 a square-line declaring a function signature and is followed by a free-form
-text block that continues to the end of file or the next square-line:
+text block that continues to the end of the file or the next square-line:
 ```text
 [my_llm_promptA(s: str) -> str]
-My LLM Promp with an f-string formating : {s}
+My LLM Prompt with an f-string formatting : {s}
 
 [my_llm_promptB(x: float)-> str]
 Some other prompt with a {x:.2f} number.
@@ -51,16 +51,16 @@ in square brackets. They're followed by one or more blocks of the form :
 `[function-signature ; optional-comma-seperated-options]` followed by 
 an optional square-line for a doc-string description, which is followed
 by the associated free-form text. The doc-string square-line uses an
-additional quote: `["A defreeform text description"]` (see example below).
+additional quote: `["A free-form text description"]` (see example below).
 If a `;` and comma separated list of optional transforms is given, these
 transforms are applied to the (template-string, doc-string) pair for that
 block in the order given in the list.
 
-As with any mixed-language parser there are some edge cases. Square
+As with any mixed-language parser, there are some edge cases. Square
 braces `[]` were picked because they're not often used in human text and
 don't clash with f-strings `{}`. The ';' was picked as an option seperator
-because Python rarely uses it, and it means line-break anyway. Lastly
-`"]` at the end of a line ends a doc-string so don't do that if you
+because Python rarely uses it, and it means line-break anyway. Lastly,
+`"]` at the end of a line ends a doc-string, so don't do that if you
 don't want it to end.
 
 Each block is rearranged into the code :
@@ -74,10 +74,37 @@ You can also import other modules using an `[import line]` at the
 beginning of the file. This can be any valid module, so this example
 shows both an ordinary Python import and another `.ftmpl` file:
 
-Once imported everything should work as expected for any python module,
-including the `help()` function and, with a little hacking `pydoc()`
+Once imported, everything should work as expected for any Python module,
+including the `help()` function and, with a little hacking, `pydoc()`.
 
-## Example
+## Transforms
+Current built-in transforms are :
+
+| option | Description |
+| :--:|:--- |
+| remove_cpp_comments    | Use PyParsing's `cpp_style_comment()` to remove c++ style comments.        |
+| remove_python_comments | Use PyParsing's `python_style_comment()` to remove python style comments.  |
+| remove_html_comments   | Use PyParsing's `html_comment()` to remove html style comments.            |
+| append_doc             | Append the current template string to the current doc string.            |
+| unwrap_lines           | Unwrap line-broken lines and normalize line white space. This transform  |
+|                        | reduces the number of EOLs in a row and replaces an EOL with a space if  |
+|                        | it is the only one. |
+| latex_tmpl             | Transform for Latex Templates to escape `{}` to `{{}}` and 
+|                        | map `<>` to `{}` |
+
+## Custom Transforms
+Each transform is a function with signature `(str, str) -> (str, str)`, and
+added to the options list with the `@add_transform(NAME)` decorator:
+
+```python
+@add_transform("transform_name")
+def _(tmpl: str, docs: str) -> (str, str):
+    ...
+    return (tmpl, docs)
+```
+See the source code for some examples.
+
+## Example Templates
 (ToDo: better examples! A longer example is in the example directory)
 
 The following Python :

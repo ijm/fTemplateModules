@@ -178,23 +178,36 @@ def mk_function(statement: (int, int, str),
 
     if id == Statements.IMPORT:
         line = ast.parse(strSig).body[0]
+        ast.fix_missing_locations(line)
+        ast.increment_lineno(line, n=lineSig - 1)
+        return line
     elif id == Statements.SIG:
         for opt in options:
             if opt not in transformMap:
                 raise KeyError(f"Unknown transform option {opt}")
             (strTmpl, strDoc) = transformMap[opt](strTmpl, strDoc)
 
-        if strDoc == '':
-            line = ast.parse(f'def {strSig}:\n return rf"""{strTmpl}"""').body[0]
-        else:
-            line = ast.parse(f'def {strSig}:\n """{strDoc}"""\n return rf"""{strTmpl}"""').body[0]
+        func_def = ast.parse(f'def {strSig}:\n ...').body[0]
+        doc_str = ast.parse(f'r"""{strDoc}"""').body[0]
+        tmpl_str = ast.parse(f'rf"""{strTmpl}"""').body[0]
+        return_ast = ast.Return(value=tmpl_str.value)
+
+        func_def.body = []
+
+        if not strDoc == '':
+            func_def.body.append(doc_str)
+
+        func_def.body.append(return_ast)
+
+        ast.fix_missing_locations(func_def)
+        ast.increment_lineno(func_def, n=lineSig - 1)
+        return func_def
+
+        # line = ast.parse(f'def {strSig}:\n return rf"""{strTmpl}"""').body[0]
+        # or
+        # line = ast.parse(f'def {strSig}:\n """{strDoc}"""\n return rf"""{strTmpl}"""').body[0]
     else:
         raise ValueError(f"{id=}")  # should do better
-
-    ast.increment_lineno(line, n=lineSig - 1)
-    ast.fix_missing_locations(line)
-
-    return line
 
 
 def assemble(cst: list[(int, str, str)]):

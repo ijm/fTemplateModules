@@ -20,6 +20,7 @@ from typing import Callable
 # string is the template string, and the second string is the doc-string
 
 transformMap = {}
+debugHook = None
 
 
 def add_transform(key: str):
@@ -172,6 +173,9 @@ def mk_function(statement: (int, int, str),
                 options: list
                 ):
     """Build AST for a block or statment. (Needs much work)"""
+
+    global debugHook
+
     id, lineSig, strSig = statement
     lineTmpl, strTmpl = tmpl
     lineDoc, strDoc = doc
@@ -189,15 +193,36 @@ def mk_function(statement: (int, int, str),
 
         func_def = ast.parse(f'def {strSig}:\n ...').body[0]
         doc_str = ast.parse(f'r"""{strDoc}"""').body[0]
-        tmpl_str = ast.parse(f'rf"""{strTmpl}"""').body[0]
-        return_ast = ast.Return(value=tmpl_str.value)
+        tmpl_strv = ast.parse(f'rf"""{strTmpl}"""').body[0].value
 
         func_def.body = []
 
         if not strDoc == '':
             func_def.body.append(doc_str)
 
-        func_def.body.append(return_ast)
+        if not debugHook:
+            return_ast = ast.Return(value=tmpl_strv)
+            func_def.body.append(return_ast)
+        else:
+            TMP_ID = "xxTemporyStringVar"
+            func_def.body.append(
+                ast.Assign(targets=[ast.Name(id=TMP_ID, ctx=ast.Store())],
+                           value=tmpl_strv))
+
+            debug = ast.parse(f'__import__("{__name__}").debug_hook()').body[0]
+            debug.value.args = [
+                ast.Constant(value=func_def.name),
+                ast.Name(id=TMP_ID, ctx=ast.Load())
+            ]
+            debug.value.keywords = [
+                ast.keyword(arg=z.arg, value=ast.Name(id=z.arg, ctx=ast.Load()))
+                for z in func_def.args.args
+            ]
+            func_def.body.append(debug)
+
+            func_def.body.append(
+                ast.Return(value=ast.Name(id=TMP_ID, ctx=ast.Load()))
+            )
 
         ast.fix_missing_locations(func_def)
         ast.increment_lineno(func_def, n=lineSig - 1)
@@ -232,6 +257,20 @@ def unparse(fd):
     the generated AST without importing the module.
     """
     return ast.unparse(assemble(parse_file(fd)))
+
+
+def set_debug_hook(callback: Callable | None) -> None:
+    """
+    Enable debugging and set the function to call when a template is used.
+    This only has an effect on the templates are imported after it is called.
+    """
+    global debugHook
+    debugHook = callback
+
+
+def debug_hook(name: str, result: str, **kargs) -> None:
+    if debugHook:
+        debugHook(name, result, **kargs)
 
 
 # Import and module machinery section.

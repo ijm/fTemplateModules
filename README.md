@@ -116,6 +116,18 @@ def _(tmpl: str, docs: str) -> (str, str):
 ```
 See the source code for some examples.
 
+## Debugging hook - an inspection hatch.
+The function `set_debug_hook(callack: Callable)` can be used to enable
+debugging and set a function to be called when ever a template is used.
+The callback function gets the name of the template and the result as returned
+by the function as the first two arguments and the arguments the template
+was called with as its keyword arguments.
+The callback hook is only compiled into the template when debugging is
+enabled, so the hook has to be set before a `.ftmpl` module is imported to
+have an effect.
+`examples/testDebug.py` wraps the `test.py` example with a JSON logger to
+log everything going through the templates into a file.
+
 ## Example Templates
 (ToDo: better examples! A longer example is in the example directory)
 
@@ -163,9 +175,4 @@ Output as well formed JSON, where the JSON is complete, should avoid using dicti
 # ToDo
 1. Better examples.
 2. Some proper tests.
-3. The constructed functions are parsed literally with `python
-ast.parse(f'def {strSig}:\n return f"""{strTmp}"""') `.
-This causes the column numbering to be off in error messages. I
-need to split it into several `parse()` calls to control the line and
-column numbering better.
 

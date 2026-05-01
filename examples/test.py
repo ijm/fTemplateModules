@@ -1,5 +1,7 @@
-import ftemplatemodules
-from prompts import test_prompt, test_prompt_tex, testB
+import ftemplatemodules  # noqa: F401 # pylint: disable=unused-import
+from prompts import (  # noqa # pylint: disable=import-error,unused-import
+    test_prompt, test_prompt_tex, testB,
+)
 
 
 def test1():
@@ -28,5 +30,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-

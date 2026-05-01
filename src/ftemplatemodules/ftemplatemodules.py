@@ -5,6 +5,7 @@ import ast
 from pathlib import Path
 from importlib.machinery import ModuleSpec, SourcelessFileLoader
 import importlib
+import importlib.util
 import pyparsing as pp
 # from importlib.util import spec_from_loader
 # from importlib import module
@@ -25,6 +26,8 @@ class _State:
     """Module-level state container for transforms and configuration."""
     transforms: dict[str, Callable[[str, str], tuple[str, str]]] = field(
         default_factory=dict)
+    parsers: dict[str, Callable[[str], ast.expr]] = field(
+        default_factory=dict)
     debug_hook: Callable[[str, str], None] | None = None
     # Future: backend_map: dict[str, Any] = field(default_factory=dict)
 
@@ -38,6 +41,13 @@ def add_transform(key: str):
     def f(func: Callable[[str, str], tuple[str, str]]) -> None:
         _STATE.transforms[key] = func
     return f
+
+
+def add_parser(key: str):
+    """Curried decorator to register template parsers by return type."""
+    def decorator(func: Callable[[str], ast.expr]) -> None:
+        _STATE.parsers[key] = func
+    return decorator
 
 
 @add_transform("remove_cpp_comments")
@@ -94,6 +104,21 @@ def _(tmpl: str, docs: str) -> tuple[str, str]:
                  replace(pp.Char(">"), "}"))
 
     return (transform.transformString(tmpl), docs)
+
+
+# Parser registry section.
+@add_parser("str")
+def parse_as_f(tmpl: str) -> ast.expr:
+    """Parse template as f-string (rf prefix for raw f-string)."""
+    return ast.parse(f'rf"""{tmpl}"""').body[0].value
+
+
+# Register t-string parser only if t-strings are available (Python 3.14+)
+if hasattr(ast, 'TemplateStr'):
+    @add_parser("Template")
+    def parse_as_t(tmpl: str) -> ast.expr:
+        """Parse template as t-string (rt prefix for raw t-string)."""
+        return ast.parse(f'rt"""{tmpl}"""').body[0].value
 
 
 # Parser section.
@@ -206,7 +231,18 @@ def mk_function(statement: (int, int, str),
 
             func_def = ast.parse(f'def {strSig}:\n ...').body[0]
             doc_str = ast.parse(f'r"""{strDoc}"""').body[0]
-            tmpl_strv = ast.parse(f'rf"""{strTmpl}"""').body[0].value
+
+            # Determine return type and select appropriate parser
+            if func_def.returns and isinstance(func_def.returns, ast.Name):
+                ret_type = func_def.returns.id
+            else:
+                ret_type = "str"
+
+            if ret_type not in _STATE.parsers:
+                raise KeyError(
+                    f"No parser registered for return type: {ret_type}")
+
+            tmpl_strv = _STATE.parsers[ret_type](strTmpl)
 
             func_def.body = []
 

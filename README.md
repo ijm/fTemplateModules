@@ -6,7 +6,7 @@ Magically Python importable f-string template files.
 
 This is a lightweight module that adds import hooks and parsing
 logic to allow a template file containing various named f-strings
-to be imported directly. Most of the hard work is done by the
+or t-strings (Python 3.14+) to be imported directly. Most of the hard work is done by the
 Python compiler, so most syntax and error checking is exactly as
 it would be in an ordinary Python file.
 
@@ -127,6 +127,24 @@ def _(tmpl: str, docs: str) -> (str, str):
 
 See the source code for some examples.
 
+## Custom Parsers
+
+After transforms are applied, the resulting string is parsed according
+to the return type declared in the function signature:
+
+- `-> str` (default): Parsed as an f-string (evaluated immediately)
+- `-> Template` (Python 3.14+): Parsed as a t-string for deferred evaluation,
+  returning a `string.templatelib.Template` object
+
+Additional parsers can be registered with the `@add_parser(NAME)` decorator:
+
+```python
+@add_parser("MyType")
+def parse_as_mytype(tmpl: str) -> ast.expr:
+    ...
+    return ast_node
+```
+
 ## Debugging hook - an inspection hatch
 
 The function `set_debug_hook(callack: Callable)` can be used to enable
@@ -191,6 +209,18 @@ The JSON is {"key1": "something-one", "key2": "something-two"}
 
 Output as well formed JSON, where the JSON is complete, should avoid using dictionaries, and has a line length of 70 characters.
 ```
+
+## Python 3.14+ Template Strings
+
+T-strings provide deferred template evaluation. Use `-> Template` as the return type:
+
+```text
+[my_template(name) -> Template]
+Hello, {name}!
+```
+
+The function returns a `Template` object from `string.templatelib` instead of a string.
+See `examples/test_tstring.py` for a working example.
 
 ## ToDo
 

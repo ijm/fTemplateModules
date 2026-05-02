@@ -11,12 +11,26 @@ authors = [
 description = "Use import hooks to read in a template file as if it were a python module object."
 readme = "README.md"
 requires-python = ">=3.8"
+dependencies = ["pyparsing>=3.0"]
+keywords = ["template", "f-string", "import-hook", "llm-prompts", "latex", "t-string"]
 classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Topic :: Software Development :: Code Generators",
+    "Topic :: Text Processing :: Templates",
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
 
 [project.urls]
-Homepage = "https://github.com/ijm/mTemplateModules"
-Issues = "https://github.com/ijm/mTemplateModules/issues"
+Homepage = "https://github.com/ijm/fTemplateModules"
+Documentation = "https://github.com/ijm/fTemplateModules#readme"
+Issues = "https://github.com/ijm/fTemplateModules/issues"
+

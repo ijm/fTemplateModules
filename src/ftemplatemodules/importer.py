@@ -10,28 +10,30 @@ from .grammar import parse_file
 
 
 class fTemplateLoader(SourcelessFileLoader):
-    SUFFIX = ".ftmpl"
-
     def is_package(self, _fullname):
         return False
 
     def get_code(self, fullname):
         """Load and compile the module code"""
-        path = Path(fullname).with_suffix(self.SUFFIX)
 
-        with open(path, "rt", encoding="utf-8") as fd:
+        with open(self.path, "rt", encoding="utf-8") as fd:
             cst = parse_file(fd)
-
-        return compile(assemble(cst), path.resolve(), 'exec')
+        return compile(assemble(cst), self.path, 'exec')
 
 
 class fTemplateFinder:
-    def find_spec(self, name: str, path: str, _target) -> ModuleSpec:
-        """Look for a toplevel file with ending in `modulesuffix` (.ftmpl)"""
+    SUFFIX = ".ftmpl"
 
-        loader = fTemplateLoader(name, path)
-        if Path(name).with_suffix(loader.SUFFIX).is_file():
-            return importlib.util.spec_from_loader(name, loader)
+    def find_spec(self, name: str, path, _target) -> ModuleSpec:
+        """Look for name.ftmpl in the provided search path."""
+
+        search_paths = [path] if isinstance(path, str) else (path or sys.path)
+        filename = f"{name}{self.SUFFIX}"
+        for base in search_paths:
+            candidate = Path(base) / filename
+            if candidate.is_file():
+                loader = fTemplateLoader(name, str(candidate))
+                return importlib.util.spec_from_loader(name, loader)
         return None
 
 

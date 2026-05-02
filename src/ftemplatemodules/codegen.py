@@ -4,15 +4,7 @@ import ast
 import importlib
 from typing import Callable
 
-# Import registry first
 from .registry import _STATE
-
-# Import transforms and parsers for side-effect registration
-# (modules register themselves via decorators on import)
-from . import transforms  # noqa: F401
-from . import parsers  # noqa: F401
-
-# Import grammar
 from .grammar import parse_file, Statements
 
 

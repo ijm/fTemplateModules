@@ -5,7 +5,8 @@ from pathlib import Path
 from importlib.machinery import ModuleSpec, SourcelessFileLoader
 import importlib.util
 
-# Codegen imported locally in methods to avoid circular imports
+from .codegen import assemble
+from .grammar import parse_file
 
 
 class fTemplateLoader(SourcelessFileLoader):
@@ -16,10 +17,6 @@ class fTemplateLoader(SourcelessFileLoader):
 
     def get_code(self, fullname):
         """Load and compile the module code"""
-        # Local import to avoid circular import at module load time
-        from .codegen import assemble
-        from .grammar import parse_file
-
         path = Path(fullname).with_suffix(self.SUFFIX)
 
         with open(path, "rt", encoding="utf-8") as fd:

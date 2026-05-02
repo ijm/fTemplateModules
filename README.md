@@ -165,7 +165,7 @@ log everything going through the templates into a file.
 The following Python :
 
 ```python
-import ftemplatemodules
+import ftemplatemodules.auto  # installs the .ftmpl import hook
 from prompts import test_prompt
 
 print(test_prompt(

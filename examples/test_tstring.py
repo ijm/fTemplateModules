@@ -1,4 +1,4 @@
-import ftemplatemodules  # noqa: F401 # pylint: disable=unused-import
+import ftemplatemodules.auto  # noqa: F401 # pylint: disable=unused-import
 from prompts_t import test_prompt_t  # noqa # pylint: disable=import-error
 
 # Python 3.14+ only - requires t-string support

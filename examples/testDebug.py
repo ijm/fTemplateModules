@@ -1,12 +1,11 @@
+import ftemplatemodules.auto  # noqa: F401 # pylint: disable=unused-import
 from ftemplatemodules import set_debug_hook
 from structlog import processors, configure, get_logger, WriteLoggerFactory
 from pathlib import Path
 
+set_debug_hook(lambda: None)  # Enable debugging during imports
 
-set_debug_hook(lambda: None)  # Enable debuging during imports
-
-
-from test import main  # noqa E402 - Must be after debug is enabled.
+from test import main  # noqa E402 - must be after debug is enabled
 
 configure(
     processors=[

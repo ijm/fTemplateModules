@@ -15,5 +15,4 @@ from .codegen import (  # noqa: F401
     debug_hook,
 )
 
-from .importer import install_hook
-install_hook()
+from .importer import install_hook  # noqa: F401

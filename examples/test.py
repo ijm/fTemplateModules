@@ -1,6 +1,8 @@
-import ftemplatemodules  # noqa: F401 # pylint: disable=unused-import
-from prompts import (  # noqa # pylint: disable=import-error,unused-import
-    test_prompt, test_prompt_tex, testB,
+import ftemplatemodules.auto  # noqa: F401 # pylint: disable=unused-import
+from prompts import (
+    test_prompt,
+    test_prompt_tex,
+    testB,
 )
 
 

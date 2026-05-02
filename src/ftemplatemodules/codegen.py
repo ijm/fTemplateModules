@@ -60,20 +60,31 @@ def mk_function(statement: (int, int, str),
                     ast.Assign(targets=[ast.Name(id=_TMP_ID, ctx=ast.Store())],
                                value=tmpl_strv))
 
-                # Use hardcoded package name for the import hook generated code
-                debug = ast.parse(
-                    '__import__("ftemplatemodules").debug_hook()').body[0]
-                debug.value.args = [
-                    ast.Constant(value=func_def.name),
-                    ast.Name(id=_TMP_ID, ctx=ast.Load())
-                ]
-                debug.value.keywords = [
-                    ast.keyword(
-                        arg=z.arg,
-                        value=ast.Name(id=z.arg, ctx=ast.Load())
+                # Capture the debug_hook as the default of a named argument,
+                # called __dbg_hook, then call it at the end.
+                func_def.args.kwonlyargs.append(
+                    ast.arg(arg="__dbg_hook", annotation=None)
+                )
+                func_def.args.kw_defaults.append(
+                    ast.Constant(value=_STATE.debug_hook)
+                )
+
+                debug = ast.Expr(
+                    value=ast.Call(
+                        func=ast.Name(id="__dbg_hook", ctx=ast.Load()),
+                        args=[
+                            ast.Constant(value=func_def.name),
+                            ast.Name(id=_TMP_ID, ctx=ast.Load())
+                        ],
+                        keywords=[
+                            ast.keyword(
+                                arg=z.arg,
+                                value=ast.Name(id=z.arg, ctx=ast.Load())
+                            )
+                            for z in func_def.args.args
+                        ]
                     )
-                    for z in func_def.args.args
-                ]
+                )
                 func_def.body.append(debug)
 
                 func_def.body.append(

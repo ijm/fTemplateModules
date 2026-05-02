@@ -1,0 +1,10 @@
+[from basePrompts import *]
+[from json import dumps]
+[test_prompt_t(data, action) -> Template]
+You are a friendly LLM.
+
+{action}
+
+The JSON is {dumps(data)}
+
+{jsonInstructions()}

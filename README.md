@@ -233,7 +233,7 @@ python examples/testPydoc.py
 python3.14 examples/test_tstring.py
 ```
 
-No pytest test suite for now as i'm the only maintainer.  Pre-PyPI build verification is in `scripts/verify-build.sh`:
+No pytest test suite for now as i'm the only maintainer. Exercising the import machinary is in `examples/import_test/test_imports.py`. Pre-PyPI build verification is in `scripts/verify-build.sh`:
 
 ## ToDo
 

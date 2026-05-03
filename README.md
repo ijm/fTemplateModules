@@ -222,7 +222,20 @@ Hello, {name}!
 The function returns a `Template` object from `string.templatelib` instead of a string.
 See `examples/test_tstring.py` for a working example.
 
+## Verification
+
+The example in `examples/` double as functional tests for validation for now. They should all run cleanly:
+
+```bash
+python examples/test.py
+python examples/testDebug.py
+python examples/testPydoc.py
+python3.14 examples/test_tstring.py
+```
+
+No pytest test suite for now as i'm the only maintainer.  Pre-PyPI build verification is in `scripts/verify-build.sh`:
+
 ## ToDo
 
 1. Better examples.
-2. Some proper tests.
+2. Some proper tests. For now the example also double as tests.

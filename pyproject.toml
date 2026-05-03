@@ -35,3 +35,8 @@ Homepage = "https://github.com/ijm/fTemplateModules"
 Documentation = "https://github.com/ijm/fTemplateModules#readme"
 Issues = "https://github.com/ijm/fTemplateModules/issues"
 
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]

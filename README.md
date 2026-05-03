@@ -1,36 +1,35 @@
 # fTemplateModules
 
-Magically Python importable f-string template files.
+ftemplatemodules lets you keep big f-strings (and >=3.14 t-strings) for LLM prompts, LaTeX docs, or any other long text in their own files, with a little compile-time transforming, then import them as normal Python functions.
 
-## Description
+It's for dev-authored templates that are mostly text with a bit of Python interpolation. The heavy lifting is done by the Python compiler, so syntax and error checking behave like ordinary Python.
 
-This is a lightweight module that adds import hooks and parsing
-logic to allow a template file containing various named f-strings
-or t-strings (Python 3.14+) to be imported directly. Most of the hard work is done by the
-Python compiler, so most syntax and error checking is exactly as
-it would be in an ordinary Python file.
+This is not a full template engine (HTML escaping, macros/filters, sandboxing, etc.). But if you want to factor templates into an importable module that your IDE will better understand, we've got you.
+
+So:
+
+```python
+import ftemplatemodules.auto
+from prompts import hello
+
+print(hello("Alice"))
+```
+
+```text
+[hello(name) -> str]
+Hello {name}
+```
 
 ## Why?
 
-I like f-strings. A lot. However, when the strings get larger, some issues
-start to arise:
+I like f-strings. A lot. But once they get big, some issues start to show up:
 
-1. Long LLM prompts, and LaTeX templates are mostly human language things,
-   not Python. I would like my IDE to do human language things, like
-   spelling or grammar checking, for human text, and python code suggestions
-   for the Python. Not the other way around.
-2. f-strings are awesome, but sometimes, especially with LaTeX, the braces `{}`
-   really need to be a different character. LaTeX uses braces a lot and
-   constantly escaping them is annoying.
-3. Comments that may only be relevant to the template have to be moved out
-   of the string or are passed on to the output to be ignored there.
-4. Whitespace has to be pre-normalized in the string or the string has to
-   be passed to a runtime function that understands not to touch f-strings
-   while normalizing.
+1. Long LLM prompts and LaTeX templates are mostly human language, not code. I want my IDE to do human-language things like spelling and grammar, for the text, and code suggestions for the code. Not the other way around!
+2. f-strings are great, but sometimes (e.g. with LaTeX) the braces `{}` really need to be different characters. LaTeX uses braces a lot and constantly escaping them is annoying.
+3. Comments that are only relevant to the template either have to be moved out of the string or end up in the output.
+4. Whitespace often has to be pre-normalized in the string, or normalized later with a runtime function that has to be careful not to touch the f-string expressions.
 
-So fTemplateModules parses and transforms a `.ftmpl` file to address these
-things while cheating by passing most of the hard work back to the Python
-compiler, and presenting the result as a Python module from the outside.
+So fTemplateModules parses and transforms a `.ftmpl` file to address these while cheating by passing most of the hard work back to the Python compiler, and then presenting the result as a Python module from the outside.
 
 ## Grammar
 
@@ -54,27 +53,27 @@ Some other prompt with a {x:.2f} number.
 More completely: the file starts with one or more import square lines
 ( `[import other_module]` ), which are ordinary Python import lines wrapped
 in square brackets. They're followed by one or more blocks of the form :
-`[function-signature ; optional-comma-seperated-options]` followed by
+`[function-signature ; optional-comma-separated-options]` followed by
 an optional square-line for a doc-string description, which is followed
 by the associated free-form text. The doc-string square-line uses an
 additional quote: `["A free-form text description"]` (see example below).
-If a `;` and comma separated list of optional transforms is given, these
-transforms are applied to the (template-string, doc-string) pair for that
-block in the order given in the list.
+If the comma separated list of optional transforms is given, these
+transforms are applied to the template-string/doc-string pair for that
+block in that list order.
 
-So for example :
+For example:
 
 ```text
 [test_prompt_tex(sub: int) -> str ; remove_cpp_comments, latex_tmpl]
 ["A LaTeX test template"]
 A string with some math in it $x=<sub>$ $\vec{x}=\mathbf{<sub>}$
 and a c++ like comment removed /* comment */ something something
-// Another c comemnt
+// Another c comment
 ```
 
 As with any mixed-language parser, there are some edge cases. Square
 braces `[]` were picked because they're not often used in human text and
-don't clash with f-strings `{}`. The ';' was picked as an option separator
+don't clash with f-strings `{}`. The `;` was picked as an option separator
 because Python rarely uses it, and it means line-break anyway. Lastly,
 `"]` at the end of a line ends a doc-string, so don't do that if you
 don't want it to end.
@@ -125,15 +124,15 @@ def _(tmpl: str, docs: str) -> (str, str):
     return (tmpl, docs)
 ```
 
-See the source code for some examples.
+See the source code in `transforms.py` for some examples.
 
 ## Custom Parsers
 
 After transforms are applied, the resulting string is parsed according
 to the return type declared in the function signature:
 
-- `-> str` (default): Parsed as an f-string (evaluated immediately)
-- `-> Template` (Python 3.14+): Parsed as a t-string for deferred evaluation,
+- `-> str` (default): Parsed as an f-string (assembled immediately)
+- `-> Template` (Python 3.14+): Parsed as a t-string (assembly deferred),
   returning a `string.templatelib.Template` object
 
 Additional parsers can be registered with the `@add_parser(NAME)` decorator:
@@ -145,9 +144,11 @@ def parse_as_mytype(tmpl: str) -> ast.expr:
     return ast_node
 ```
 
+See the source code in `parsers.py` for some examples.
+
 ## Debugging hook - an inspection hatch
 
-The function `set_debug_hook(callack: Callable)` can be used to enable
+The function `set_debug_hook(callback: Callable)` can be used to enable
 debugging and set a function to be called when ever a template is used.
 The callback function gets the name of the template and the result as returned
 by the function as the first two arguments and the arguments the template
@@ -212,7 +213,7 @@ Output as well formed JSON, where the JSON is complete, should avoid using dicti
 
 ## Python 3.14+ Template Strings
 
-T-strings provide deferred template evaluation. Use `-> Template` as the return type:
+T-strings provide deferred template assembly. Use `-> Template` as the return type:
 
 ```text
 [my_template(name) -> Template]
@@ -233,7 +234,7 @@ python examples/testPydoc.py
 python3.14 examples/test_tstring.py
 ```
 
-No pytest test suite for now as i'm the only maintainer. Exercising the import machinary is in `examples/import_test/test_imports.py`. Pre-PyPI build verification is in `scripts/verify-build.sh`:
+No pytest test suite for now as i'm the only maintainer. Exercising the import machinery is in `examples/import_test/test_imports.py`. Pre-PyPI build verification is in `scripts/verify-build.sh`:
 
 ## ToDo
 

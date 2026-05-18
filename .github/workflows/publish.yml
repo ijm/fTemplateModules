@@ -1,31 +1,15 @@
-name: Publish to PyPI
-
-on:
-  release:
-    types: [created]
-  workflow_dispatch:
-    inputs:
-      environment:
-        description: 'Environment to publish to'
-        required: true
-        type: choice
-        options:
-          - testpypi
-          - pypi
-
 jobs:
   build:
     runs-on: ubuntu-latest
-    environment: ${{ github.event.inputs.environment }}
     permissions:
-      id-token: write
+      contents: read
     steps:
       - uses: actions/checkout@v5
       
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.x'
+          python-version: '3.11'
       
       - name: Install build dependencies
         run: |
@@ -40,8 +24,13 @@ jobs:
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           repository-url: https://test.pypi.org/legacy/
+          password: ${{ secrets.TEST_PYPI_API_TOKEN }}
+          attestations: false
       
       - name: Publish to PyPI
         if: github.event_name == 'release' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'pypi')
         uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          password: ${{ secrets.PYPI_API_TOKEN }}
+          attestations: false
 
